@@ -1,5 +1,6 @@
 // Scene
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05080c);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
@@ -16,21 +17,21 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-// Controls (slow auto-rotation)
+// Controls
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.autoRotate = true;
-controls.autoRotateSpeed = 0.4;
+controls.autoRotateSpeed = 0.5;
 controls.enableZoom = false;
 
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(10, 20, 10);
 scene.add(light);
 
-// Track points (mathematical model)
+// === CURVE MODEL (Mathematical Track) ===
 const points = [];
-for (let i = 0; i < 120; i++) {
+for (let i = 0; i <= 120; i++) {
     points.push(
         new THREE.Vector3(
             i - 60,
@@ -42,41 +43,46 @@ for (let i = 0; i < 120; i++) {
 
 const curve = new THREE.CatmullRomCurve3(points);
 
-// Curvature-based coloring
-const safeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
-const unsafeMaterial = new THREE.MeshStandardMaterial({ color: 0xff4444 });
+// === TUBE GEOMETRY ===
+const geometry = new THREE.TubeGeometry(curve, 300, 0.45, 10, false);
 
-const segments = 100;
-let previousTangent = curve.getTangentAt(0);
+// === CURVATURE-BASED COLORING ===
+const colors = [];
+let prevTangent = curve.getTangentAt(0);
 
-for (let i = 1; i <= segments; i++) {
-    const t1 = (i - 1) / segments;
-    const t2 = i / segments;
+for (let i = 0; i <= 300; i++) {
+    const t = i / 300;
+    const tangent = curve.getTangentAt(t);
+    const curvature = tangent.clone().sub(prevTangent).length();
 
-    const tangent = curve.getTangentAt(t2);
-    const curvature = tangent.clone().sub(previousTangent).length();
+    const color =
+        curvature > 0.12
+            ? new THREE.Color(0xff4444) // unsafe
+            : new THREE.Color(0x00ff88); // safe
 
-    const material = curvature > 0.12 ? unsafeMaterial : safeMaterial;
+    for (let j = 0; j < geometry.parameters.radialSegments + 1; j++) {
+        colors.push(color.r, color.g, color.b);
+    }
 
-    const segment = new THREE.Mesh(
-        new THREE.TubeGeometry(
-            new THREE.CatmullRomCurve3([
-                curve.getPointAt(t1),
-                curve.getPointAt(t2)
-            ]),
-            20,
-            0.45,
-            8,
-            false
-        ),
-        material
-    );
-
-    scene.add(segment);
-    previousTangent = tangent.clone();
+    prevTangent = tangent.clone();
 }
 
-// Animation
+geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
+);
+
+// Material
+const material = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    metalness: 0.4,
+    roughness: 0.3
+});
+
+const track = new THREE.Mesh(geometry, material);
+scene.add(track);
+
+// === ANIMATE ===
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -90,3 +96,4 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
