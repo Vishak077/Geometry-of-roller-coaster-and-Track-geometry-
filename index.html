@@ -1,23 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Roller Coaster Track Geometry</title>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
-    header { background-color: #d32f2f; color: white; padding: 20px; text-align: center; }
-    h1, h2 { margin: 0 0 10px 0; }
-    .section { padding: 30px 20px; margin: 10px auto; max-width: 900px; background-color: white; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
-    .control { margin-top: 10px; }
-    label { font-weight: bold; margin-right: 10px; }
-    input[type=range] { width: 300px; }
-    #safety { font-weight: bold; font-size: 1.2em; margin-top: 10px; }
-    #calculations p { margin: 5px 0; }
-    #explanation { margin-top: 15px; padding: 10px; border-left: 5px solid #1976d2; background-color: #f1f8ff; border-radius: 5px; }
-    #tips { margin-top: 15px; padding: 10px; border-left: 5px solid #d32f2f; background-color: #fff3f3; border-radius: 5px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roller Coaster Track Geometry</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+header { background-color: #d32f2f; color: white; padding: 20px; text-align: center; }
+h1, h2 { margin: 0 0 10px 0; }
+.section { padding: 30px 20px; margin: 10px auto; max-width: 900px; background-color: white; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+.control { margin-top: 10px; }
+label { font-weight: bold; margin-right: 10px; }
+input[type=range] { width: 300px; }
+#safety { font-weight: bold; font-size: 1.2em; margin-top: 10px; }
+#calculations p { margin: 5px 0; }
+#explanation { margin-top: 15px; padding: 10px; border-left: 5px solid #1976d2; background-color: #f1f8ff; border-radius: 5px; }
+#tips { margin-top: 15px; padding: 10px; border-left: 5px solid #d32f2f; background-color: #fff3f3; border-radius: 5px; }
+#applications {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 280px;
+  background-color: #fff3e0;
+  border-left: 5px solid #ff9800;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+#applications h3 { margin-top: 0; font-size: 1.1em; color: #d32f2f; }
+#applications p { font-size: 0.9em; margin: 8px 0; }
+</style>
 </head>
 <body>
 
@@ -77,6 +90,13 @@
   </ul>
 </div>
 
+<!-- Real-world applications floating panel -->
+<div id="applications">
+  <h3>Real-World Applications</h3>
+  <p><strong>1. Amusement Ride Design:</strong> Engineers use curvature and g-force analysis to design roller coasters that are thrilling yet safe, ensuring passenger comfort.</p>
+  <p><strong>2. Vehicle Road Safety:</strong> Curvature analysis helps design safe highway curves and racetracks, reducing the risk of accidents by keeping lateral forces within limits.</p>
+</div>
+
 <script>
 const ampSlider = document.getElementById('amplitude');
 const freqSlider = document.getElementById('frequency');
@@ -122,13 +142,29 @@ function calculateTrack() {
 function updatePlot() {
   let trace1 = { x: trackData.t, y: trackData.y, mode:'lines', name:'Track', line:{color:'#d32f2f'} };
   let trace2 = { x: trackData.t, y: trackData.curvature, mode:'lines', name:'Curvature', yaxis:'y2', line:{color:'#1976d2'} };
+
+  // Virtual roller coaster marker
+  let tCurrent = parseFloat(tSlider.value);
+  let idx = trackData.t.findIndex(val => val >= tCurrent);
+  let coasterMarker = {
+    x: [trackData.t[idx]],
+    y: [trackData.y[idx]],
+    mode: 'markers+text',
+    name: 'Roller Coaster',
+    marker: { color: 'gold', size: 15, symbol: 'circle' },
+    text: ['🎢'],
+    textposition: 'top center',
+    showlegend: false
+  };
+
   let layout = {
     title: 'Track vs Curvature',
     yaxis: { title: 'Track Position (y)', showgrid:true },
     yaxis2: { title: 'Curvature', overlaying: 'y', side: 'right', showgrid:false },
     legend: { x:0, y:1.2 }
   };
-  Plotly.newPlot('plot', [trace1, trace2], layout);
+
+  Plotly.newPlot('plot', [trace1, trace2, coasterMarker], layout);
 }
 
 function updateCalculations() {
@@ -140,29 +176,18 @@ function updateCalculations() {
   currentTEl.innerText = tCurrent;
   currentT2El.innerText = tCurrent;
 
-  // Find nearest index
   let idx = trackData.t.findIndex(val => val >= tCurrent);
   let curvAtT = trackData.curvature[idx].toFixed(3);
   curvatureAtTEl.innerText = curvAtT;
 
-  // Estimate g-force (assume velocity = 10 m/s)
   let velocity = 10; // m/s
   let gForce = (9.81 * curvAtT * velocity * velocity).toFixed(2);
   gForceEl.innerText = gForce;
 
-  // Safety status
-  if(maxCurv < 0.5){
-    statusEl.innerText = "Safe";
-    statusEl.style.color = "green";
-  } else if(maxCurv < 1.5){
-    statusEl.innerText = "Caution";
-    statusEl.style.color = "orange";
-  } else {
-    statusEl.innerText = "Unsafe";
-    statusEl.style.color = "red";
-  }
+  if(maxCurv < 0.5){ statusEl.innerText = "Safe"; statusEl.style.color = "green"; }
+  else if(maxCurv < 1.5){ statusEl.innerText = "Caution"; statusEl.style.color = "orange"; }
+  else { statusEl.innerText = "Unsafe"; statusEl.style.color = "red"; }
 
-  // Update explanation
   let comfort = "";
   if(gForce < 2) comfort = "Very smooth ride.";
   else if(gForce < 3) comfort = "Comfortable but noticeable turn.";
@@ -185,15 +210,12 @@ function updateTips(A, f) {
   tipsTextEl.innerText = tips;
 }
 
-// Initial plot
 calculateTrack();
-
-// Event listeners
 ampSlider.addEventListener('input', calculateTrack);
 freqSlider.addEventListener('input', calculateTrack);
 tSlider.addEventListener('input', updateCalculations);
 
 </script>
-
 </body>
 </html>
+
