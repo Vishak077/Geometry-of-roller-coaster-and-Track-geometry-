@@ -6,69 +6,194 @@
   <title>Roller Coaster Track Geometry</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1, h2 { color: #d32f2f; }
-    .section { margin-bottom: 50px; }
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+    header { background-color: #d32f2f; color: white; padding: 20px; text-align: center; }
+    h1, h2 { margin: 0 0 10px 0; }
+    .section { padding: 30px 20px; margin: 10px auto; max-width: 900px; background-color: white; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+    .control { margin-top: 10px; }
+    label { font-weight: bold; margin-right: 10px; }
+    input[type=range] { width: 300px; }
+    #safety { font-weight: bold; font-size: 1.2em; margin-top: 10px; }
+    #calculations p { margin: 5px 0; }
+    #explanation { margin-top: 15px; padding: 10px; border-left: 5px solid #1976d2; background-color: #f1f8ff; border-radius: 5px; }
+    #tips { margin-top: 15px; padding: 10px; border-left: 5px solid #d32f2f; background-color: #fff3f3; border-radius: 5px; }
   </style>
 </head>
 <body>
 
-  <div class="section">
-    <h1>Roller Coaster Track Geometry</h1>
-    <p>The curvature of a roller coaster track is critical for passenger comfort and safety.</p>
+<header>
+  <h1>Roller Coaster Track Geometry</h1>
+  <p>Explore how track shape affects curvature, g-force, and passenger comfort.</p>
+</header>
+
+<div class="section">
+  <h2>Adjust Track Parameters</h2>
+  <div class="control">
+    <label for="amplitude">Amplitude:</label>
+    <input type="range" id="amplitude" min="0.5" max="5" step="0.1" value="1">
+    <span id="ampVal">1</span>
   </div>
-
-  <div class="section">
-    <h2>Mathematical Modeling</h2>
-    <p>We can model the track as a parametric curve:</p>
-    <pre>x(t) = t, y(t) = sin(t), z(t) = cos(2t)</pre>
-    <p>Here, t represents the position along the track.</p>
+  <div class="control">
+    <label for="frequency">Frequency:</label>
+    <input type="range" id="frequency" min="0.1" max="2" step="0.1" value="1">
+    <span id="freqVal">1</span>
   </div>
-
-  <div class="section">
-    <h2>Curvature Analysis</h2>
-    <div id="plot" style="width:100%;height:400px;"></div>
-    <script>
-      // Simple 2D curve: y = sin(t)
-      let t = [];
-      let y = [];
-      let curvature = [];
-
-      for (let i=0; i<=20; i+=0.1){
-        t.push(i);
-        y.push(Math.sin(i));
-        let dy = Math.cos(i);
-        let ddy = -Math.sin(i);
-        curvature.push(Math.abs(ddy)/Math.pow(1+dy*dy, 1.5));
-      }
-
-      let trace1 = { x: t, y: y, mode:'lines', name:'Track' };
-      let trace2 = { x: t, y: curvature, mode:'lines', name:'Curvature', yaxis:'y2' };
-
-      let layout = {
-        title: 'Track vs Curvature',
-        yaxis: { title: 'Position' },
-        yaxis2: { title: 'Curvature', overlaying: 'y', side: 'right' }
-      };
-
-      Plotly.newPlot('plot', [trace1, trace2], layout);
-    </script>
+  <div class="control">
+    <label for="tSlider">Track Position (t):</label>
+    <input type="range" id="tSlider" min="0" max="20" step="0.1" value="0">
+    <span id="tVal">0</span>
   </div>
+  <div id="safety">Safety Status: <span id="status">Safe</span></div>
+</div>
 
-  <div class="section">
-    <h2>Assumptions</h2>
-    <ul>
-      <li>Track is rigid and smooth</li>
-      <li>Passenger mass is standard</li>
-      <li>Ignore air resistance</li>
-      <li>Curvature below recommended limits ensures comfort</li>
-    </ul>
-  </div>
+<div class="section">
+  <h2>Track vs Curvature</h2>
+  <div id="plot" style="width:100%;height:400px;"></div>
+</div>
 
-  <div class="section">
-    <h2>Validation</h2>
-    <p>Compare curvature values to safe g-force limits (e.g., < 3g for amusement rides).</p>
+<div class="section">
+  <h2>Calculations</h2>
+  <div id="calculations">
+    <p>Maximum Curvature: <span id="maxCurvature">0</span></p>
+    <p>Curvature at t = <span id="currentT">0</span>: <span id="curvatureAtT">0</span></p>
+    <p>Estimated g-force at t = <span id="currentT2">0</span>: <span id="gForce">0</span> g</p>
+    <p>Note: g-force ≈ 9.81 * curvature * velocity² (assuming velocity = 10 m/s)</p>
   </div>
+  <div id="explanation">
+    <p id="explainText">Move the slider to see how curvature and g-force affect passenger comfort.</p>
+  </div>
+  <div id="tips">
+    <p id="tipsText">Tips: Try increasing amplitude to make taller hills, or increase frequency to make more frequent turns. Observe how curvature and g-force change!</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Assumptions</h2>
+  <ul>
+    <li>Track is rigid and smooth</li>
+    <li>Passenger mass is standard</li>
+    <li>Ignore air resistance</li>
+    <li>Curvature below recommended limits ensures comfort (safe < 3g)</li>
+  </ul>
+</div>
+
+<script>
+const ampSlider = document.getElementById('amplitude');
+const freqSlider = document.getElementById('frequency');
+const tSlider = document.getElementById('tSlider');
+const ampVal = document.getElementById('ampVal');
+const freqVal = document.getElementById('freqVal');
+const tVal = document.getElementById('tVal');
+const statusEl = document.getElementById('status');
+const maxCurvatureEl = document.getElementById('maxCurvature');
+const curvatureAtTEl = document.getElementById('curvatureAtT');
+const gForceEl = document.getElementById('gForce');
+const currentTEl = document.getElementById('currentT');
+const currentT2El = document.getElementById('currentT2');
+const explainTextEl = document.getElementById('explainText');
+const tipsTextEl = document.getElementById('tipsText');
+
+let trackData = { t: [], y: [], curvature: [] };
+
+function calculateTrack() {
+  let A = parseFloat(ampSlider.value);
+  let f = parseFloat(freqSlider.value);
+  ampVal.innerText = A;
+  freqVal.innerText = f;
+
+  let t = [];
+  let y = [];
+  let curvature = [];
+
+  for (let i = 0; i <= 20; i += 0.1) {
+    t.push(i);
+    y.push(A * Math.sin(f * i));
+    let dy = A * f * Math.cos(f * i);
+    let ddy = -A * f * f * Math.sin(f * i);
+    curvature.push(Math.abs(ddy) / Math.pow(1 + dy * dy, 1.5));
+  }
+
+  trackData = { t, y, curvature };
+  updatePlot();
+  updateCalculations();
+  updateTips(A, f);
+}
+
+function updatePlot() {
+  let trace1 = { x: trackData.t, y: trackData.y, mode:'lines', name:'Track', line:{color:'#d32f2f'} };
+  let trace2 = { x: trackData.t, y: trackData.curvature, mode:'lines', name:'Curvature', yaxis:'y2', line:{color:'#1976d2'} };
+  let layout = {
+    title: 'Track vs Curvature',
+    yaxis: { title: 'Track Position (y)', showgrid:true },
+    yaxis2: { title: 'Curvature', overlaying: 'y', side: 'right', showgrid:false },
+    legend: { x:0, y:1.2 }
+  };
+  Plotly.newPlot('plot', [trace1, trace2], layout);
+}
+
+function updateCalculations() {
+  let maxCurv = Math.max(...trackData.curvature);
+  maxCurvatureEl.innerText = maxCurv.toFixed(3);
+
+  let tCurrent = parseFloat(tSlider.value);
+  tVal.innerText = tCurrent;
+  currentTEl.innerText = tCurrent;
+  currentT2El.innerText = tCurrent;
+
+  // Find nearest index
+  let idx = trackData.t.findIndex(val => val >= tCurrent);
+  let curvAtT = trackData.curvature[idx].toFixed(3);
+  curvatureAtTEl.innerText = curvAtT;
+
+  // Estimate g-force (assume velocity = 10 m/s)
+  let velocity = 10; // m/s
+  let gForce = (9.81 * curvAtT * velocity * velocity).toFixed(2);
+  gForceEl.innerText = gForce;
+
+  // Safety status
+  if(maxCurv < 0.5){
+    statusEl.innerText = "Safe";
+    statusEl.style.color = "green";
+  } else if(maxCurv < 1.5){
+    statusEl.innerText = "Caution";
+    statusEl.style.color = "orange";
+  } else {
+    statusEl.innerText = "Unsafe";
+    statusEl.style.color = "red";
+  }
+
+  // Update explanation
+  let comfort = "";
+  if(gForce < 2) comfort = "Very smooth ride.";
+  else if(gForce < 3) comfort = "Comfortable but noticeable turn.";
+  else if(gForce < 5) comfort = "Intense turn, may feel strong forces.";
+  else comfort = "Very sharp turn, may be unsafe for passengers!";
+
+  explainTextEl.innerHTML = `
+    At t = ${tCurrent.toFixed(1)}, the curvature is <strong>${curvAtT}</strong>.<br>
+    Estimated g-force is <strong>${gForce}</strong> g.<br>
+    Passenger comfort: <strong>${comfort}</strong>
+  `;
+}
+
+function updateTips(A, f) {
+  let tips = `Tips: `;
+  if(A > 3) tips += "High amplitude makes very tall hills → higher curvature and g-force. ";
+  else tips += "Lower amplitude makes smoother hills → lower curvature. ";
+  if(f > 1.5) tips += "High frequency → many tight turns → higher curvature. ";
+  else tips += "Low frequency → gentle turns → safer ride. ";
+  tipsTextEl.innerText = tips;
+}
+
+// Initial plot
+calculateTrack();
+
+// Event listeners
+ampSlider.addEventListener('input', calculateTrack);
+freqSlider.addEventListener('input', calculateTrack);
+tSlider.addEventListener('input', updateCalculations);
+
+</script>
 
 </body>
 </html>
