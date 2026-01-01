@@ -1,25 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Roller Coaster Track Geometry & Safety</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roller Coaster Track Geometry</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1, h2 { color: #d32f2f; }
+    .section { margin-bottom: 50px; }
+  </style>
 </head>
 <body>
 
-<div class="info">
-    <h1>🎢 Roller Coaster Track Geometry</h1>
-    <p>
-        Track modeled using mathematical curves.<br>
-        Color indicates curvature-based safety.
-    </p>
-    <span class="safe">● Safe curvature</span>
-    <span class="unsafe">● High curvature</span>
-</div>
+  <div class="section">
+    <h1>Roller Coaster Track Geometry</h1>
+    <p>The curvature of a roller coaster track is critical for passenger comfort and safety.</p>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
-<script src="main.js"></script>
+  <div class="section">
+    <h2>Mathematical Modeling</h2>
+    <p>We can model the track as a parametric curve:</p>
+    <pre>x(t) = t, y(t) = sin(t), z(t) = cos(2t)</pre>
+    <p>Here, t represents the position along the track.</p>
+  </div>
+
+  <div class="section">
+    <h2>Curvature Analysis</h2>
+    <div id="plot" style="width:100%;height:400px;"></div>
+    <script>
+      // Simple 2D curve: y = sin(t)
+      let t = [];
+      let y = [];
+      let curvature = [];
+
+      for (let i=0; i<=20; i+=0.1){
+        t.push(i);
+        y.push(Math.sin(i));
+        let dy = Math.cos(i);
+        let ddy = -Math.sin(i);
+        curvature.push(Math.abs(ddy)/Math.pow(1+dy*dy, 1.5));
+      }
+
+      let trace1 = { x: t, y: y, mode:'lines', name:'Track' };
+      let trace2 = { x: t, y: curvature, mode:'lines', name:'Curvature', yaxis:'y2' };
+
+      let layout = {
+        title: 'Track vs Curvature',
+        yaxis: { title: 'Position' },
+        yaxis2: { title: 'Curvature', overlaying: 'y', side: 'right' }
+      };
+
+      Plotly.newPlot('plot', [trace1, trace2], layout);
+    </script>
+  </div>
+
+  <div class="section">
+    <h2>Assumptions</h2>
+    <ul>
+      <li>Track is rigid and smooth</li>
+      <li>Passenger mass is standard</li>
+      <li>Ignore air resistance</li>
+      <li>Curvature below recommended limits ensures comfort</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Validation</h2>
+    <p>Compare curvature values to safe g-force limits (e.g., < 3g for amusement rides).</p>
+  </div>
 
 </body>
 </html>
